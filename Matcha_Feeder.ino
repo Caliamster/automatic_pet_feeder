@@ -1,5 +1,5 @@
 //RFID SDA - D21, SCK - D18, MOSI - D23, MISO - D19, RST - D22
-//IR1 - D34, IR2 - D35
+//IR1 - D35, IR2 - D34
 //IN1 - D5, IN2 - D4, IN3 - D2, IN4 - D15
 //Servo - D27
 //Error LED - D32
@@ -27,7 +27,7 @@
 #define SMTP_HOST "smtp.gmail.com"
 #define SMTP_PORT 465
 #define AUTHOR_EMAIL "matcha.feeder@gmail.com"
-#define AUTHOR_PASSWORD "Batman1.1"
+#define AUTHOR_PASSWORD "e23r2tgfdgdfAg"
 #define RECIPIENT_EMAIL "teodor_cali@yahoo.com"
 //RFID
 #define SS_PIN  21
@@ -50,8 +50,8 @@ const int   daylightOffset_sec = 3600;
 //RFID
 const int ipaddress[4] = {103, 97, 67, 25};
 //IR
-uint16_t RECV_PIN1 = 34;
-uint16_t RECV_PIN2 = 35;
+uint16_t RECV_PIN1 = 35;
+uint16_t RECV_PIN2 = 34;
 //Servo
 int servoPin = 27;
 
@@ -134,7 +134,6 @@ void setup() {
   ESP32PWM::allocateTimer(2);
   ESP32PWM::allocateTimer(3);
   myservo.setPeriodHertz(50);
-  myservo.attach(servoPin, 500, 2400);
 
   //LED
   pinMode(ERROR_LED, OUTPUT);
@@ -149,12 +148,12 @@ void loop() {
   
   getLocalTime(&timeinfo);
   prev_hour = curr_hour;
-  curr_hour = timeinfo.tm_sec;
+  curr_hour = timeinfo.tm_hour;
   if (curr_hour != prev_hour) { // Hour changed
     //Stepper
     if (curr_hour == schedule) {
-      for (int i = 0; i < 5; i++) { // Give portion in 5 rounds
-        myStepper.step(quantity*10); // FIXME: de corelat corect grame cu pasi
+      for (int i = 0; i < 4; i++) { // Give portion in 5 rounds
+        myStepper.step(quantity*5);
         if (analogRead(RECV_PIN2) < 3000) {
           error = 1;
           digitalWrite(ERROR_LED, LOW);
@@ -165,7 +164,7 @@ void loop() {
           myStepper.step(-100);
           myStepper.step(100);
           myStepper.step(-100);
-          myStepper.step(quantity*10); // FIXME: de corelat corect grame cu pasi
+          myStepper.step(quantity*5);
           if (analogRead(RECV_PIN2) < 3000) {
             error = 1;
             digitalWrite(ERROR_LED, LOW);
@@ -182,16 +181,17 @@ void loop() {
             message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
             message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
-            /* Connect to server with the session config */
+            // Connect to server with the session config
             if (!smtp.connect(&session))
               return;
 
-            /* Start sending Email and close the session */
+            // Start sending Email and close the session
             if (!MailClient.sendMail(&smtp, &message))
               Serial.println("Error sending Email, " + smtp.errorReason());
     
             break;
           }
+          delay(500);
         }
       }
     }
@@ -213,11 +213,11 @@ void loop() {
       message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
       message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
-      /* Connect to server with the session config */
+      // Connect to server with the session config
       if (!smtp.connect(&session))
         return;
 
-      /* Start sending Email and close the session */
+      // Start sending Email and close the session
       if (!MailClient.sendMail(&smtp, &message))
         Serial.println("Error sending Email, " + smtp.errorReason());
     }
@@ -317,20 +317,24 @@ void onAddRemovePetChange()  {
 
 //Servo
 void open_bowl() {
+  myservo.attach(servoPin, 500, 2400);
   servo_stat = 1;
   for (pos = 0; pos <= 100; pos += 1) {
     myservo.write(pos);
     delay(10);
   }
+  myservo.detach();
 
 }
 
 void close_bowl() {
+  myservo.attach(servoPin, 500, 2400);
   servo_stat = 0;
   for (pos = 100; pos >= 0; pos -= 1) {
     myservo.write(pos);
     delay(10);
   }
+  myservo.detach();
 }
 
 //RFID
